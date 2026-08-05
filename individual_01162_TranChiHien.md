@@ -82,3 +82,5 @@ QA & Validation Specialist kiểm định toàn bộ sản phẩm đầu ra củ
 **Ngày xác nhận:** 2026-08-05
 
 <!-- Last verified by Tran Chi Hien -->
+
+<!-- Verified by Tran Chi Hien (01162) at 2026-08-05 15:31:25 -->
