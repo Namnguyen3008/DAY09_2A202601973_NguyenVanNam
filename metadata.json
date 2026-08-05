@@ -3,6 +3,5 @@
   "parameter_size": "8B",
   "framework": "Custom Multi-Agent Orchestrator (A2A Handoff Framework)",
   "runtime": "Python 3.12",
-  "total_cases_processed": 50,
-  "last_verified_at": "2026-08-05 15:32:47"
+  "total_cases_processed": 50
 }
