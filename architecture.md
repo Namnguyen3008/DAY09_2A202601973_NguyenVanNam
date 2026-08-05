@@ -97,3 +97,5 @@ Mọi bằng chứng thu thập bởi hệ thống multi-agent đều tuân theo
 Các sự kiện không tồn tại trong dữ liệu thực tế sẽ bị loại bỏ hoàn toàn để phòng ngừa false positives.
 
 <!-- Verified by Nguyen Dam Kien (02015) at 2026-08-05 15:31:48 -->
+
+<!-- Verified by Tran Chi Hien (01162) at 2026-08-05 15:33:33 -->
