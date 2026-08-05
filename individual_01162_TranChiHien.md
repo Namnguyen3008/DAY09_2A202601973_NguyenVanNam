@@ -80,3 +80,5 @@ QA & Validation Specialist kiểm định toàn bộ sản phẩm đầu ra củ
 
 **Họ và tên:** Trần Chí Hiển  
 **Ngày xác nhận:** 2026-08-05
+
+<!-- Last verified by Tran Chi Hien -->
