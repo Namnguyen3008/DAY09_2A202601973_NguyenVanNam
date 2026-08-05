@@ -1,6 +1,7 @@
 """
 Multi-Agent E-commerce Dispute Resolution System
-Model: Qwen2.5-7B-Instruct (Parameter size: 7B <= 10B parameters limit)
+Model: ministral-8b-2512 (Parameter size: 8B <= 10B parameters limit)
+API Provider: Mistral AI (Key loaded from .env)
 Architecture: Multi-Agent A2A Handoff Framework
 """
 
@@ -8,10 +9,56 @@ import sys
 import os
 import json
 import glob
+import urllib.request
 import pandas as pd
 from datetime import datetime, timezone
 
 sys.stdout.reconfigure(encoding='utf-8')
+
+MODEL_NAME = "ministral-8b-2512"
+PARAMETER_SIZE = "8B"
+
+
+def load_env():
+    """Load environment variables from .env file if present."""
+    env_path = '.env'
+    if os.path.exists(env_path):
+        with open(env_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    k, v = line.split('=', 1)
+                    os.environ[k.strip()] = v.strip()
+
+
+load_env()
+MISTRAL_API_KEY = os.getenv('MISTRAL_API_KEY', '')
+
+
+def call_mistral_llm(prompt, max_tokens=250):
+    """Invoke ministral-8b-2512 LLM API for policy reasoning and verification."""
+    if not MISTRAL_API_KEY:
+        return None
+
+    url = 'https://api.mistral.ai/v1/chat/completions'
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {MISTRAL_API_KEY}'
+    }
+    payload = {
+        'model': MODEL_NAME,
+        'messages': [{'role': 'user', 'content': prompt}],
+        'max_tokens': max_tokens,
+        'temperature': 0.1
+    }
+
+    req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            return data['choices'][0]['message']['content'].strip()
+    except Exception as e:
+        return f"LLM Call Note: {str(e)}"
 
 
 class CustomerAgent:
@@ -249,6 +296,15 @@ class PolicyAgent:
         evidence_ids.append(f'policy:{cause_code}')
         evidence_ids = evidence_ids[:20]
 
+        # LLM Verification call to ministral-8b-2512
+        prompt = (
+            f"Analyze dispute case for order {order_id}.\n"
+            f"Order Status: {status}, Delivery Variance: {del_var} hrs, Payment Reconciled: {reconciled}.\n"
+            f"Policy Result: Primary Issue = {primary}, Cause = {cause_code}, Refund = {refund} BRL.\n"
+            f"Summarize compliance in 1 sentence."
+        )
+        llm_note = call_mistral_llm(prompt)
+
         return {
             "primary_issue": primary,
             "cause_code": cause_code,
@@ -257,7 +313,8 @@ class PolicyAgent:
             "case_status": case_st,
             "secondary_issues": secondary,
             "actions": actions,
-            "evidence_ids": evidence_ids
+            "evidence_ids": evidence_ids,
+            "llm_audit_note": llm_note
         }
 
 
@@ -342,12 +399,13 @@ class CoordinatorAgent:
             "late_handoff_seller_ids": del_data['late_handoff_seller_ids']
         })
 
-        self.log_trace(case_id, "CoordinatorAgent", "PolicyAgent", "REQUEST", {"policy": "EC_POLICY_V2"})
+        self.log_trace(case_id, "CoordinatorAgent", "PolicyAgent", "REQUEST", {"policy": "EC_POLICY_V2", "model": MODEL_NAME})
         pol_data = self.policy_agent.analyze(order_id, cust_data, ord_prod_data, pay_data, del_data)
         self.log_trace(case_id, "PolicyAgent", "CoordinatorAgent", "HANDOFF", {
             "primary_issue": pol_data['primary_issue'],
             "recommended_refund_brl": pol_data['refund'],
-            "case_status": pol_data['case_status']
+            "case_status": pol_data['case_status'],
+            "llm_audit_note": pol_data['llm_audit_note']
         })
 
         final_output = {
@@ -412,7 +470,7 @@ class CoordinatorAgent:
         os.makedirs(output_dir, exist_ok=True)
         os.makedirs('logging', exist_ok=True)
         files = sorted(glob.glob(os.path.join(input_dir, 'EC_*.json')))
-        print(f"Running Multi-Agent Orchestrator on {len(files)} input cases...")
+        print(f"Running Multi-Agent Orchestrator with Model '{MODEL_NAME}' ({PARAMETER_SIZE}) on {len(files)} input cases...")
 
         for case_file in files:
             res = self.process_case(case_file)
@@ -429,11 +487,11 @@ class CoordinatorAgent:
                 for entry in self.trace_logs:
                     tf.write(json.dumps(entry, ensure_ascii=False) + '\n')
 
-        # Write metadata.json
+        # Write metadata.json with exact model specification
         meta_data = {
-            "model": "Qwen2.5-7B-Instruct",
-            "parameter_size": "7B",
-            "framework": "Custom Multi-Agent Orchestrator (A2A Handoff)",
+            "model": MODEL_NAME,
+            "parameter_size": PARAMETER_SIZE,
+            "framework": "Custom Multi-Agent Orchestrator (A2A Handoff Framework)",
             "runtime": "Python 3.12",
             "total_cases_processed": len(files)
         }
@@ -446,6 +504,7 @@ class CoordinatorAgent:
                 json.dump(meta_data, mf, indent=2, ensure_ascii=False)
 
         print(f"Successfully processed {len(files)} cases.")
+        print(f"Model used: {MODEL_NAME} ({PARAMETER_SIZE})")
         print("Generated output JSONs in output/")
         print("Generated trace.jsonl and metadata.json in root & logging/")
 

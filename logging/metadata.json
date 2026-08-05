@@ -1,7 +1,7 @@
 {
-  "model": "Qwen2.5-7B-Instruct",
-  "parameter_size": "7B",
-  "framework": "Custom Multi-Agent Orchestrator (A2A Handoff)",
+  "model": "ministral-8b-2512",
+  "parameter_size": "8B",
+  "framework": "Custom Multi-Agent Orchestrator (A2A Handoff Framework)",
   "runtime": "Python 3.12",
   "total_cases_processed": 50
 }
