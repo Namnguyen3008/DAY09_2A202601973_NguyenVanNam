@@ -77,3 +77,5 @@ Payment Agent và Delivery Agent cung cấp 2 trụ cột bằng chứng quan tr
 
 **Họ và tên:** Lê Kim Tính  
 **Ngày xác nhận:** 2026-08-05
+
+<!-- Last verified by Le Kim Tinh -->
