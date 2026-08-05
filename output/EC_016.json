@@ -96,7 +96,6 @@
   "resolution_actions": [
     "refund_freight",
     "review_carrier_delay",
-    "verify_refund_completion",
     "verify_payment_allocation"
   ]
 }

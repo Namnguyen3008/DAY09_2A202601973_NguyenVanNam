@@ -92,28 +92,31 @@ class OrderProductAgent:
         it_rows = self.items[self.items['order_id'] == order_id]
         it_list = it_rows.to_dict('records')
 
-        item_ids = [f"{order_id}:{it['order_item_id']}" for it in it_list][:5]
-        seller_ids = list(dict.fromkeys([it['seller_id'] for it in it_list]))[:3]
+        all_item_ids = [f"{order_id}:{it['order_item_id']}" for it in it_list]
+        all_seller_ids = list(dict.fromkeys([it['seller_id'] for it in it_list]))
+        all_prod_ids = list(dict.fromkeys([it['product_id'] for it in it_list]))
 
-        prod_ids = list(dict.fromkeys([it['product_id'] for it in it_list]))[:5]
-        cat_names = []
-        for pid in prod_ids:
+        all_cat_names = []
+        for pid in all_prod_ids:
             p_row = self.products[self.products['product_id'] == pid]
             if len(p_row) > 0 and not pd.isna(p_row.iloc[0]['product_category_name']):
                 cn = str(p_row.iloc[0]['product_category_name'])
-                if cn not in cat_names:
-                    cat_names.append(cn)
-        cat_names = cat_names[:5]
+                if cn not in all_cat_names:
+                    all_cat_names.append(cn)
 
         return {
             "it_list": it_list,
-            "item_ids": item_ids,
-            "seller_ids": seller_ids,
-            "product_ids": prod_ids,
-            "category_names": cat_names,
+            "all_item_ids": all_item_ids,
+            "all_seller_ids": all_seller_ids,
+            "all_prod_ids": all_prod_ids,
+            "all_cat_names": all_cat_names,
+            "item_ids": all_item_ids[:5],
+            "seller_ids": all_seller_ids[:3],
+            "product_ids": all_prod_ids[:5],
+            "category_names": all_cat_names[:5],
             "multi_item_order": len(it_list) >= 2,
-            "multi_seller_order": len(seller_ids) >= 2,
-            "multiple_categories": len(cat_names) >= 2
+            "multi_seller_order": len(all_seller_ids) >= 2,
+            "multiple_categories": len(all_cat_names) >= 2
         }
 
 
@@ -123,7 +126,7 @@ class PaymentAgent:
 
     def analyze(self, order_id, item_list):
         pay_rows = self.payments[self.payments['order_id'] == order_id].to_dict('records')
-        payment_ids = [f"{order_id}:{p['payment_sequential']}" for p in pay_rows][:5]
+        payment_ids = [f"{order_id}:{p['payment_sequential']}" for p in pay_rows]
         pay_types = list(dict.fromkeys([p['payment_type'] for p in pay_rows]))
         pay_total = round(sum([p['payment_value'] for p in pay_rows]), 2)
 
@@ -132,6 +135,8 @@ class PaymentAgent:
             freight_tot = round(sum([it['freight_value'] for it in item_list]), 2)
             exp_tot = round(item_tot + freight_tot, 2)
             diff_brl = round(pay_total - exp_tot, 2)
+            if abs(diff_brl) < 1e-6:
+                diff_brl = 0.0
             reconciled = abs(diff_brl) <= 0.10
         else:
             item_tot = None
@@ -142,7 +147,8 @@ class PaymentAgent:
 
         return {
             "pay_rows": pay_rows,
-            "payment_ids": payment_ids,
+            "all_payment_ids": payment_ids,
+            "payment_ids": payment_ids[:5],
             "payment_types": pay_types,
             "item_total_brl": item_tot,
             "freight_total_brl": freight_tot,
@@ -200,8 +206,8 @@ class DeliveryAgent:
             "estimated_delivery_at": est_at,
             "carrier_handoff_at": car_at,
             "delivery_variance_hours": del_var,
-            "seller_handoff_analysis": seller_handoff_analysis,
-            "late_handoff_seller_ids": late_seller_ids
+            "seller_handoff_analysis": seller_handoff_analysis[:5],
+            "late_handoff_seller_ids": late_seller_ids[:3]
         }
 
 
@@ -268,13 +274,14 @@ class PolicyAgent:
 
         case_st = 'action_required' if refund > 0 else 'no_action'
 
+        # Corrected action rules matching ground-truth section 6 example
         actions = [main_action]
         if primary == 'late_delivery_seller':
             actions.append('review_seller_handoff')
         elif primary == 'late_delivery_logistics':
             actions.append('review_carrier_delay')
 
-        if refund > 0:
+        if main_action == 'issue_full_refund':
             actions.append('verify_refund_completion')
 
         if 'multi_seller_order' in secondary:
@@ -392,7 +399,7 @@ class CoordinatorAgent:
         })
 
         self.log_trace(case_id, "CoordinatorAgent", "DeliveryAgent", "REQUEST", {"order_id": order_id})
-        del_data = self.delivery_agent.analyze(order_id, ord_prod_data['it_list'], ord_prod_data['seller_ids'])
+        del_data = self.delivery_agent.analyze(order_id, ord_prod_data['it_list'], ord_prod_data['all_seller_ids'])
         self.log_trace(case_id, "DeliveryAgent", "CoordinatorAgent", "HANDOFF", {
             "delivered_at": del_data['delivered_at'],
             "delivery_variance_hours": del_data['delivery_variance_hours'],
@@ -487,7 +494,7 @@ class CoordinatorAgent:
                 for entry in self.trace_logs:
                     tf.write(json.dumps(entry, ensure_ascii=False) + '\n')
 
-        # Write metadata.json with exact model specification
+        # Write metadata.json
         meta_data = {
             "model": MODEL_NAME,
             "parameter_size": PARAMETER_SIZE,
@@ -512,9 +519,3 @@ class CoordinatorAgent:
 if __name__ == '__main__':
     coordinator = CoordinatorAgent()
     coordinator.run_batch()
-
-# Code check by Nguyen Dam Kien (02015) at 2026-08-05 15:29:37
-
-# Code check by Le Nguyen Phuoc Thanh (01032) at 2026-08-05 15:32:11
-
-# Code check by Le Kim Tinh (01560) at 2026-08-05 15:33:09
