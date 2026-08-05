@@ -126,3 +126,5 @@ python validate_outputs.py
 
 **Họ và tên:** Nguyễn Văn Nam  
 **Ngày xác nhận:** 2026-08-05
+
+<!-- Last verified by Nguyen Van Nam -->
