@@ -516,3 +516,5 @@ if __name__ == '__main__':
 # Code check by Nguyen Dam Kien (02015) at 2026-08-05 15:29:37
 
 # Code check by Le Nguyen Phuoc Thanh (01032) at 2026-08-05 15:32:11
+
+# Code check by Le Kim Tinh (01560) at 2026-08-05 15:33:09
