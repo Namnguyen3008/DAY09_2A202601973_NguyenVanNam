@@ -77,3 +77,5 @@ Customer Agent và OrderProduct Agent đóng vai trò thu thập thông tin gố
 
 **Họ và tên:** Lê Nguyễn Phước Thành  
 **Ngày xác nhận:** 2026-08-05
+
+<!-- Last verified by Le Nguyen Phuoc Thanh -->
